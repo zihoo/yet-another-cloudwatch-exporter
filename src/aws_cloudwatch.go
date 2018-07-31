@@ -40,8 +40,8 @@ func prepareCloudwatchRequest(service *string, arn *string, metric metric) *clou
 	startTime := time.Now().Add(-time.Duration(length) * time.Minute)
 
 	var statistics []*string
-	for _, statistic := range metric.Statistics {
-		statistics = append(statistics, &statistic)
+    for i, _ := range metric.Statistics {
+        statistics = append(statistics, &metric.Statistics[i])
 	}
 
 	return &cloudwatch.GetMetricStatisticsInput{
@@ -114,7 +114,7 @@ func getDimensions(service *string, resourceArn *string) (dimensions []*cloudwat
 		dimensions = buildBaseDimension(arnParsed.Resource, "BucketName", "")
 		dimensions = append(dimensions, buildDimension("StorageType", "AllStorageTypes"))
 	default:
-		log.Fatal("Not implemented cloudwatch metric:" + *service)
+		log.Fatal("Not implemented cloudwatch metric: " + *service)
 	}
 	return dimensions
 }
@@ -157,8 +157,16 @@ func migrateCloudwatchToPrometheus(cwd []*cloudwatchData) []*prometheusData {
 					if point.Sum != nil {
 						points = append(points, point.Sum)
 					}
+                case "Average":
+                    if point.Average != nil {
+                        points = append(points, point.Average)
+                    }
+                case "SampleCount":
+                    if point.SampleCount != nil {
+                        points = append(points, point.SampleCount)
+                    }
 				default:
-					log.Fatal("Not implemented statistics" + statistic)
+                    log.Fatal("Not implemented statistics: " + statistic)
 				}
 			}
 
